@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Registration</title>
+  <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <div class="card shadow rounded-4 p-4 mx-auto" style="max-width: 500px;">
+    <h2 class="text-center mb-4">User Registration</h2>
+
+    <div class="mb-3">
+      <label class="form-label">Name</label>
+      <input type="text" id="name" class="form-control" placeholder="Enter your name">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" id="email" class="form-control" placeholder="Enter your email">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Phone</label>
+      <input type="text" id="phone" class="form-control" placeholder="Enter your phone number">
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label">Tool</label>
+      <select id="tool" class="form-select">
+        <option value="">-- Select Tool --</option>
+        <option value="gst">GST</option>
+        <option value="tds">TDS</option>
+      </select>
+    </div>
+
+    <button onclick="register()" class="btn btn-primary w-100">Register</button>
+    <p id="msg" class="text-center mt-3 text-success fw-semibold"></p>
+  </div>
+</div>
+
+<script>
+  function register() {
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const tool = document.getElementById("tool").value;
+
+    if (!name || !email || !phone || !tool) {
+      document.getElementById("msg").innerText = "All fields are required.";
+      return;
+    }
+
+    fetch("http://127.0.0.1:8000/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone, tool })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("msg").innerText = data.message || data.error || "Something went wrong.";
+      // Optionally clear the form
+      document.getElementById("name").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("phone").value = "";
+      document.getElementById("tool").value = "";
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    section { margin-bottom: 40px; }
+    input, button { padding: 6px; margin: 4px 0; width: 250px; }
+    h2 { color: #444; }
+    table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 8px; }
+  </style>
+</head>
+<body>
+
+  <h1>User Management System</h1>
+
+  <!-- Registration -->
+  <section>
+    <h2>Register User</h2>
+    <input type="text" id="reg_name" placeholder="Name"><br>
+    <input type="email" id="reg_email" placeholder="Email"><br>
+    <input type="text" id="reg_phone" placeholder="Phone"><br>
+    <input type="text" id="reg_tool" placeholder="Tool (gst or tds)"><br>
+    <button onclick="registerUser()">Register</button>
+    <p id="register_msg"></p>
+  </section>
+
+  <!-- Approval -->
+  <section>
+    <h2>Approve User</h2>
+    <input type="email" id="approve_email" placeholder="User Email to Approve"><br>
+    <button onclick="approveUser()">Approve</button>
+    <p id="approve_msg"></p>
+  </section>
+
+  <!-- Admin Dashboard -->
+  <section>
+    <h2>Admin Dashboard</h2>
+    <button onclick="loadUsers()">Load Users</button>
+    <div id="user_table"></div>
+  </section>
+
+  <!-- Deactivate User -->
+  <section>
+    <h2>Deactivate User</h2>
+    <input type="email" id="deactivate_email" placeholder="User Email to Deactivate"><br>
+    <button onclick="deactivateUser()">Deactivate</button>
+    <p id="deactivate_msg"></p>
+  </section>
+
+  <script>
+    const api = "http://127.0.0.1:8000";
+
+    function registerUser() {
+      fetch(`${api}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("reg_name").value,
+          email: document.getElementById("reg_email").value,
+          phone: document.getElementById("reg_phone").value,
+          tool: document.getElementById("reg_tool").value
+        })
+      }).then(res => res.json())
+        .then(data => document.getElementById("register_msg").innerText = data.message || data.error);
+    }
+
+    function approveUser() {
+      fetch(`${api}/approve_user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("approve_email").value
+        })
+      }).then(res => res.json())
+        .then(data => document.getElementById("approve_msg").innerText = data.message || data.error);
+    }
+
+    function deactivateUser() {
+      fetch(`${api}/deactivate_user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("deactivate_email").value
+        })
+      }).then(res => res.json())
+        .then(data => document.getElementById("deactivate_msg").innerText = data.message || data.error);
+    }
+
+    function loadUsers() {
+      fetch(`${api}/users`)
+        .then(res => res.json())
+        .then(users => {
+          let html = `<table><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tool</th><th>Active</th></tr>`;
+          users.forEach(u => {
+            html += `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.phone}</td><td>${u.tool}</td><td>${u.active ?? 0}</td></tr>`;
+          });
+          html += `</table>`;
+          document.getElementById("user_table").innerHTML = html;
+        });
+    }
+  </script>
+
+</body>
+</html>

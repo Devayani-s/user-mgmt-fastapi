@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Approver Panel</title>
+  <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <div class="card shadow p-4 rounded-4">
+    <h2 class="text-center mb-4">Pending Approvals</h2>
+
+    <div class="d-flex justify-content-center mb-3">
+      <button onclick="loadPending()" class="btn btn-primary">Load Pending Users</button>
+    </div>
+
+    <div id="msg" class="text-center fw-semibold mb-3"></div>
+
+    <div id="userTable" class="table-responsive"></div>
+  </div>
+</div>
+
+<script>
+  function loadPending() {
+    fetch("http://127.0.0.1:8000/users")
+      .then(res => res.json())
+      .then(users => {
+        const pending = users.filter(u => u.active === 0);
+        if (pending.length === 0) {
+          document.getElementById("userTable").innerHTML = `
+            <div class="alert alert-info text-center">No pending users.</div>`;
+          return;
+        }
+
+        let table = `
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Tool</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>`;
+        pending.forEach(user => {
+          table += `
+            <tr>
+              <td>${user.name}</td>
+              <td>${user.email}</td>
+              <td>${user.tool.toUpperCase()}</td>
+              <td>
+                <button class="btn btn-success btn-sm me-2" onclick="approveUser('${user.email}')">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.email}')">Reject</button>
+              </td>
+            </tr>`;
+        });
+        table += `</tbody></table>`;
+        document.getElementById("userTable").innerHTML = table;
+      });
+  }
+
+  function approveUser(email) {
+    fetch("http://127.0.0.1:8000/approve_user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("msg").innerText = data.message || data.error;
+      loadPending(); // refresh
+    });
+  }
+
+  function rejectUser(email) {
+    if (confirm("Are you sure you want to reject (deactivate) this user?")) {
+      fetch("http://127.0.0.1:8000/deactivate_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("msg").innerText = data.message || data.error;
+        loadPending(); // refresh list
+      });
+    }
+  }
+</script>
+
+</body>
+</html>

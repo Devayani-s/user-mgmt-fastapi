@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Tool Users</title>
+  <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">Admin Dashboard - Tool Users</h2>
+
+  <div id="msg" class="alert d-none"></div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-3" id="toolTabs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" id="gst-tab" data-bs-toggle="tab" data-bs-target="#gst" type="button">GST Users</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tds-tab" data-bs-toggle="tab" data-bs-target="#tds" type="button">TDS Users</button>
+    </li>
+  </ul>
+
+  <!-- Search Boxes -->
+  <div class="tab-content" id="toolTabsContent">
+    <!-- GST Tab -->
+    <div class="tab-pane fade show active" id="gst" role="tabpanel">
+      <input class="form-control mb-2" placeholder="Search GST users by email..." onkeyup="filterTable('gstTable', this.value)">
+      <table class="table table-bordered bg-white shadow-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="gstTable"></tbody>
+      </table>
+    </div>
+
+    <!-- TDS Tab -->
+    <div class="tab-pane fade" id="tds" role="tabpanel">
+      <input class="form-control mb-2" placeholder="Search TDS users by email..." onkeyup="filterTable('tdsTable', this.value)">
+      <table class="table table-bordered bg-white shadow-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tdsTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Deactivation Confirm Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Confirm Deactivation</h5></div>
+      <div class="modal-body" id="confirmText">Are you sure?</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="confirmBtn" class="btn btn-danger">Yes, Deactivate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedEmail = "";
+
+function showMessage(msg, isError = false) {
+  const msgBox = document.getElementById("msg");
+  msgBox.textContent = msg;
+  msgBox.className = `alert ${isError ? "alert-danger" : "alert-success"}`;
+  msgBox.classList.remove("d-none");
+  setTimeout(() => msgBox.classList.add("d-none"), 3000);
+}
+
+function loadUsers() {
+  fetch("http://127.0.0.1:8000/all_users")
+    .then(res => res.json())
+    .then(data => {
+      const gstTable = document.getElementById("gstTable");
+      const tdsTable = document.getElementById("tdsTable");
+      gstTable.innerHTML = "";
+      tdsTable.innerHTML = "";
+
+      data.forEach(user => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${user.email}</td>
+          <td>${user.active ? "Active" : "Not Approved"}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" onclick="confirmDeactivation('${user.email}')">Deactivate</button>
+          </td>
+        `;
+        if (user.tool.toLowerCase() === "gst") {
+          gstTable.appendChild(row);
+        } else if (user.tool.toLowerCase() === "tds") {
+          tdsTable.appendChild(row);
+        }
+      });
+    });
+}
+
+function confirmDeactivation(email) {
+  selectedEmail = email;
+  document.getElementById("confirmText").textContent = `Are you sure you want to deactivate ${email}?`;
+  new bootstrap.Modal(document.getElementById("confirmModal")).show();
+}
+
+document.getElementById("confirmBtn").addEventListener("click", function () {
+  fetch("http://127.0.0.1:8000/deactivate_user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: selectedEmail })
+  })
+    .then(res => res.json())
+    .then(data => {
+      showMessage(data.message || data.error, !!data.error);
+      loadUsers();
+      bootstrap.Modal.getInstance(document.getElementById("confirmModal")).hide();
+    });
+});
+
+function filterTable(tableId, searchValue) {
+  const input = searchValue.toLowerCase();
+  const rows = document.querySelectorAll(`#${tableId} tr`);
+  rows.forEach(row => {
+    const email = row.cells[0]?.innerText.toLowerCase() || "";
+    row.style.display = email.includes(input) ? "" : "none";
+  });
+}
+
+loadUsers();
+</script>
+</body>
+</html>
